@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyScheme Live Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-number { font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px; }
+        .stat-label { color: #666; font-size: 1.1em; }
+        
+        .controls { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .controls h2 { margin-bottom: 20px; color: #333; }
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd8; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-info:hover { background: #138496; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-warning:hover { background: #e0a800; }
+        
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+        .card-header { background: #f8f9fa; padding: 20px; border-bottom: 1px solid #dee2e6; }
+        .card-header h3 { color: #333; margin: 0; }
+        .card-body { padding: 20px; }
+        
+        .status-indicator { padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+        .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        
+        .schemes-list { max-height: 400px; overflow-y: auto; }
+        .scheme-item { padding: 15px; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .scheme-item:hover { background: #f8f9fa; }
+        .scheme-item:last-child { border-bottom: none; }
+        .scheme-name { font-weight: 600; color: #333; margin-bottom: 5px; }
+        .scheme-meta { font-size: 0.9em; color: #666; }
+        .scheme-description { font-size: 0.9em; color: #555; margin-top: 8px; line-height: 1.4; }
+        
+        .activity-log { background: #2d3748; color: #e2e8f0; padding: 20px; font-family: 'Courier New', monospace; font-size: 0.9em; max-height: 300px; overflow-y: auto; border-radius: 8px; }
+        .log-entry { margin-bottom: 5px; }
+        .log-timestamp { color: #a0aec0; }
+        
+        .search-box { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; margin-bottom: 20px; }
+        
+        @media (max-width: 768px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .btn-group { flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ MyScheme Live Dashboard</h1>
+            <p>Real-time Government Schemes Data from MyScheme.gov.in</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-schemes">0</div>
+                <div class="stat-label">Total Schemes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-ministries">0</div>
+                <div class="stat-label">Ministries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-sectors">0</div>
+                <div class="stat-label">Sectors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="last-updated">Never</div>
+                <div class="stat-label">Last Updated</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2>🎛️ Controls</h2>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="scrapeNow()">🕷️ Scrape Now</button>
+                <button class="btn btn-info" onclick="testScraper()">🧪 Test Scraper</button>
+                <button class="btn btn-success" onclick="refreshData()">🔄 Refresh Data</button>
+                <button class="btn btn-warning" onclick="clearLogs()">🧹 Clear Logs</button>
+            </div>
+        </div>
+
+        <div id="status-container"></div>
+
+        <div class="content-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Recent Schemes</h3>
+                </div>
+                <div class="card-body">
+                    <input type="text" class="search-box" id="search-input" placeholder="Search schemes..." onkeyup="filterSchemes()">
+                    <div class="schemes-list" id="schemes-list">
+                        <p>Loading schemes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📝 Activity Log</h3>
+                </div>
+                <div class="card-body">
+                    <div class="activity-log" id="activity-log"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize WebSocket connection
+        const socket = io();
+        let allSchemes = [];
+        let isConnected = false;
+
+        // DOM elements
+        const totalSchemesEl = document.getElementById('total-schemes');
+        const totalMinistriesEl = document.getElementById('total-ministries');
+        const totalSectorsEl = document.getElementById('total-sectors');
+        const lastUpdatedEl = document.getElementById('last-updated');
+        const statusContainer = document.getElementById('status-container');
+        const schemesList = document.getElementById('schemes-list');
+        const activityLog = document.getElementById('activity-log');
+        const searchInput = document.getElementById('search-input');
+
+        // WebSocket event handlers
+        socket.on('connect', () => {
+            isConnected = true;
+            addLog('✅ Connected to WebSocket server');
+            showStatus('Connected to live updates', 'success');
+        });
+
+        socket.on('disconnect', () => {
+            isConnected = false;
+            addLog('❌ Disconnected from WebSocket server');
+            showStatus('Disconnected from live updates', 'error');
+        });
+
+        socket.on('scrape-started', (data) => {
+            showStatus('MyScheme scraping started...', 'info');
+            addLog(`🕷️ ${data.message}`);
+        });
+
+        socket.on('scrape-completed', (data) => {
+            showStatus(`Scraping completed: ${data.result.scraped} found, ${data.result.saved} saved`, 'success');
+            addLog(`✅ Scraping completed: ${data.result.scraped} scraped, ${data.result.saved} saved, ${data.result.updated} updated`);
+            refreshData();
+        });
+
+        socket.on('scrape-error', (data) => {
+            showStatus(`Scraping failed: ${data.error}`, 'error');
+            addLog(`❌ Scraping error: ${data.error}`);
+        });
+
+        socket.on('stats-update', (data) => {
+            updateStats(data);
+            addLog(`📊 Stats updated: ${data.totalSchemes} schemes`);
+        });
+
+        // Functions
+        function updateStats(data) {
+            totalSchemesEl.textContent = data.totalSchemes || 0;
+            totalMinistriesEl.textContent = data.totalMinistries || 0;
+            totalSectorsEl.textContent = data.totalSectors || 0;
+            lastUpdatedEl.textContent = data.lastUpdated ? 
+                new Date(data.lastUpdated).toLocaleString() : 'Never';
+
+            if (data.recentSchemes) {
+                allSchemes = data.recentSchemes;
+                displaySchemes(allSchemes);
+            }
+        }
+
+        function displaySchemes(schemes) {
+            if (schemes.length === 0) {
+                schemesList.innerHTML = '<p>No schemes found</p>';
+                return;
+            }
+
+            schemesList.innerHTML = schemes.map(scheme => `
+                <div class="scheme-item">
+                    <div class="scheme-name">${scheme.name}</div>
+                    <div class="scheme-meta">
+                        Ministry: ${scheme.ministry || 'N/A'} | 
+                        Sector: ${scheme.sector || 'N/A'} |
+                        Updated: ${new Date(scheme.updatedAt).toLocaleDateString()}
+                    </div>
+                    ${scheme.description ? `<div class="scheme-description">${scheme.description.substring(0, 150)}${scheme.description.length > 150 ? '...' : ''}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function filterSchemes() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredSchemes = allSchemes.filter(scheme => 
+                scheme.name.toLowerCase().includes(searchTerm) ||
+                (scheme.description && scheme.description.toLowerCase().includes(searchTerm)) ||
+                (scheme.ministry && scheme.ministry.toLowerCase().includes(searchTerm))
+            );
+            displaySchemes(filteredSchemes);
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.createElement('div');
+            statusEl.className = `status-indicator status-${type}`;
+            statusEl.textContent = message;
+            statusContainer.innerHTML = '';
+            statusContainer.appendChild(statusEl);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                if (statusContainer.contains(statusEl)) {
+                    statusContainer.removeChild(statusEl);
+                }
+            }, 5000);
+        }
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${message}`;
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
+
+        function clearLogs() {
+            activityLog.innerHTML = '';
+            addLog('Logs cleared');
+        }
+
+        // API functions
+        async function scrapeNow() {
+            try {
+                showStatus('Starting MyScheme scraping...', 'info');
+                addLog('🕷️ Triggering manual scraping...');
+                
+                const response = await fetch('/api/myscheme/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ saveToDb: true, notifyClients: true })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Scraping completed: ${data.scraped} schemes found`, 'success');
+                    addLog(`✅ Scraping successful: ${data.scraped} scraped, ${data.saved} saved, ${data.updated} updated`);
+                    refreshData();
+                } else {
+                    showStatus(`Scraping failed: ${data.message}`, 'error');
+                    addLog(`❌ Scraping failed: ${data.message}`);
+                }
+            } catch (error) {
+                showStatus(`Scraping failed: ${error.message}`, 'error');
+                addLog(`❌ Scraping failed: ${error.message}`);
+            }
+        }
+
+        async function testScraper() {
+            try {
+                showStatus('Testing scraper...', 'info');
+                addLog('🧪 Running scraper test...');
+                
+                const response = await fetch('/api/myscheme/test');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Test completed: ${data.count} schemes found`, 'success');
+                    addLog(`🧪 Test successful: ${data.count} schemes found, ${data.stats.capturedApiCalls} API calls captured`);
+                } else {
+                    showStatus(`Test failed: ${data.message}`, 'error');
+                    addLog(`❌ Test failed: ${data.message}`);
+                }
+            } catch (error) {
+                showStatus(`Test failed: ${error.message}`, 'error');
+                addLog(`❌ Test failed: ${error.message}`);
+            }
+        }
+
+        async function refreshData() {
+            try {
+                addLog('🔄 Refreshing data...');
+                
+                // Get stats
+                const statsResponse = await fetch('/api/myscheme/stats');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success) {
+                    updateStats(statsData.stats);
+                    addLog('📊 Data refreshed successfully');
+                }
+                
+                // Get schemes
+                const schemesResponse = await fetch('/api/myscheme?limit=50');
+                const schemesData = await schemesResponse.json();
+                
+                if (schemesData.success) {
+                    allSchemes = schemesData.data;
+                    displaySchemes(allSchemes);
+                    addLog(`📋 Loaded ${schemesData.data.length} schemes`);
+                }
+                
+            } catch (error) {
+                addLog(`❌ Failed to refresh data: ${error.message}`);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            addLog('🚀 MyScheme Dashboard initialized');
+            refreshData();
+        });
+    </script>
+</body>
+</html>

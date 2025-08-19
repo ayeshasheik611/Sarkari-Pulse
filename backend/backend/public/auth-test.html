@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Test - MyScheme API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .auth-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+        }
+
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+
+        .btn-danger {
+            background: #f44336;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .token-display {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            color: #555;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Authentication System Test</h1>
+            <p>Test the JWT authentication endpoints for MyScheme API</p>
+        </div>
+
+        <div class="content">
+            <!-- Registration Section -->
+            <div class="auth-section">
+                <h2>👤 User Registration</h2>
+                <div class="form-group">
+                    <label for="regUsername">Username:</label>
+                    <input type="text" id="regUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password:</label>
+                    <input type="password" id="regPassword" placeholder="Enter password (min 6 chars)">
+                </div>
+                <div class="form-group">
+                    <label for="regFirstName">First Name (optional):</label>
+                    <input type="text" id="regFirstName" placeholder="Enter first name">
+                </div>
+                <div class="form-group">
+                    <label for="regLastName">Last Name (optional):</label>
+                    <input type="text" id="regLastName" placeholder="Enter last name">
+                </div>
+                <button class="btn" onclick="register()">Register</button>
+                <div id="registerResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- Login Section -->
+            <div class="auth-section">
+                <h2>🔑 User Login</h2>
+                <div class="form-group">
+                    <label for="loginIdentifier">Email or Username:</label>
+                    <input type="text" id="loginIdentifier" placeholder="Enter email or username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password">
+                </div>
+                <button class="btn" onclick="login()">Login</button>
+                <div id="loginResponse" class="response" style="display: none;"></div>
+                <div id="tokenDisplay" class="token-display" style="display: none;"></div>
+            </div>
+
+            <!-- Protected Routes Section -->
+            <div class="auth-section">
+                <h2>🛡️ Protected Routes (Requires Authentication)</h2>
+                <button class="btn btn-secondary" onclick="getProfile()">Get Profile</button>
+                <button class="btn btn-secondary" onclick="getSchemes()">Get Schemes (Protected)</button>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+                <div id="protectedResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- Current Token Section -->
+            <div class="auth-section">
+                <h2>🎫 Current Session</h2>
+                <p><strong>Token Status:</strong> <span id="tokenStatus">No token</span></p>
+                <button class="btn btn-secondary" onclick="checkToken()">Check Token</button>
+                <button class="btn btn-danger" onclick="clearToken()">Clear Token</button>
+                <div id="tokenInfo" class="response" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        
+        // Update token status on page load
+        updateTokenStatus();
+
+        function updateTokenStatus() {
+            const statusElement = document.getElementById('tokenStatus');
+            if (authToken) {
+                statusElement.textContent = 'Token present';
+                statusElement.style.color = '#28a745';
+            } else {
+                statusElement.textContent = 'No token';
+                statusElement.style.color = '#dc3545';
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const firstName = document.getElementById('regFirstName').value;
+            const lastName = document.getElementById('regLastName').value;
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        firstName,
+                        lastName
+                    })
+                });
+
+                const data = await response.json();
+                
+                const responseDiv = document.getElementById('registerResponse');
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                responseDiv.className = `response ${data.success ? 'success' : 'error'}`;
+
+                if (data.success && data.data.token) {
+                    authToken = data.data.token;
+                    localStorage.setItem('authToken', authToken);
+                    updateTokenStatus();
+                    showToken(authToken);
+                }
+
+            } catch (error) {
+                showError('registerResponse', 'Registration failed: ' + error.message);
+            }
+        }
+
+        async function login() {
+            const identifier = document.getElementById('loginIdentifier').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        identifier,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+                
+                const responseDiv = document.getElementById('loginResponse');
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                responseDiv.className = `response ${data.success ? 'success' : 'error'}`;
+
+                if (data.success && data.data.token) {
+                    authToken = data.data.token;
+                    localStorage.setItem('authToken', authToken);
+                    updateTokenStatus();
+                    showToken(authToken);
+                }
+
+            } catch (error) {
+                showError('loginResponse', 'Login failed: ' + error.message);
+            }
+        }
+
+        async function getProfile() {
+            if (!authToken) {
+                showError('protectedResponse', 'No authentication token. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                const responseDiv = document.getElementById('protectedResponse');
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                responseDiv.className = `response ${data.success ? 'success' : 'error'}`;
+
+            } catch (error) {
+                showError('protectedResponse', 'Get profile failed: ' + error.message);
+            }
+        }
+
+        async function getSchemes() {
+            if (!authToken) {
+                showError('protectedResponse', 'No authentication token. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/myscheme?limit=5', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                const responseDiv = document.getElementById('protectedResponse');
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                responseDiv.className = `response ${data.success ? 'success' : 'error'}`;
+
+            } catch (error) {
+                showError('protectedResponse', 'Get schemes failed: ' + error.message);
+            }
+        }
+
+        async function logout() {
+            if (!authToken) {
+                showError('protectedResponse', 'No authentication token.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                const responseDiv = document.getElementById('protectedResponse');
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                responseDiv.className = `response ${data.success ? 'success' : 'error'}`;
+
+                if (data.success) {
+                    clearToken();
+                }
+
+            } catch (error) {
+                showError('protectedResponse', 'Logout failed: ' + error.message);
+            }
+        }
+
+        function checkToken() {
+            const responseDiv = document.getElementById('tokenInfo');
+            responseDiv.style.display = 'block';
+            
+            if (authToken) {
+                try {
+                    // Decode JWT payload (basic decode, not verification)
+                    const payload = JSON.parse(atob(authToken.split('.')[1]));
+                    responseDiv.textContent = `Token Payload:\n${JSON.stringify(payload, null, 2)}`;
+                    responseDiv.className = 'response info';
+                } catch (error) {
+                    responseDiv.textContent = `Invalid token format: ${error.message}`;
+                    responseDiv.className = 'response error';
+                }
+            } else {
+                responseDiv.textContent = 'No token stored';
+                responseDiv.className = 'response error';
+            }
+        }
+
+        function clearToken() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            updateTokenStatus();
+            document.getElementById('tokenDisplay').style.display = 'none';
+            
+            const responseDiv = document.getElementById('tokenInfo');
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = 'Token cleared successfully';
+            responseDiv.className = 'response success';
+        }
+
+        function showToken(token) {
+            const tokenDiv = document.getElementById('tokenDisplay');
+            tokenDiv.style.display = 'block';
+            tokenDiv.innerHTML = `<strong>JWT Token:</strong><br>${token}`;
+        }
+
+        function showError(elementId, message) {
+            const responseDiv = document.getElementById(elementId);
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = message;
+            responseDiv.className = 'response error';
+        }
+
+        // Load token on page refresh
+        if (authToken) {
+            updateTokenStatus();
+            showToken(authToken);
+        }
+    </script>
+</body>
+</html>
