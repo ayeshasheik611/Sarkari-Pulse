@@ -1,5 +1,5 @@
 // Authentication service for API calls
-const API_BASE_URL = 'http://localhost:9000';
+const API_BASE_URL = 'https://sarkari-pulse.onrender.com';
 
 export interface User {
   id: string;

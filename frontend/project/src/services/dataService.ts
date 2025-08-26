@@ -26,7 +26,7 @@ interface SchemeStats {
   levelBreakdown: Record<string, number>;
 }
 
-const API_BASE_URL = 'http://localhost:9000';
+const API_BASE_URL = 'https://sarkari-pulse.onrender.com';
 const WS_URL = 'ws://localhost:9000';
 const WORLDBANK_API_BASE = 'http://localhost:9000/api/worldbank';
 
