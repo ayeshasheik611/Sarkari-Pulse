@@ -107,13 +107,7 @@ mongoose.connect(MONGODB_URI)
     // Setup routes after DB connection
     await setupRoutes();
     
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 API endpoints available at http://localhost:${PORT}/api`);
-      console.log(`🔌 WebSocket server available at ws://localhost:${PORT}`);
-      console.log(`🌐 Dashboard available at http://localhost:${PORT}/myscheme-dashboard.html`);
-      console.log(`🚀 Bulk Scraping Dashboard at http://localhost:${PORT}/bulk-scraping-dashboard.html`);
-    });
+    
   })
   .catch(err => {
     console.error("❌ MongoDB connection error:", err);
