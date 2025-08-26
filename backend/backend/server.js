@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const server = createServer(app);
+//const server = createServer(app);
 const PORT = process.env.PORT || 9000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
