@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 9000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sarkari_pulse';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
