@@ -40,7 +40,11 @@ app.get('/api', (req, res) => {
       'POST /api/auth/login',
       'GET /api/auth/profile (protected)',
       'PUT /api/auth/profile (protected)',
-      'PUT /api/auth/change-password (protected)'
+      'PUT /api/auth/change-password (protected)',
+      'GET /api/worldbank',
+      'GET /api/worldbank/economy',
+      'GET /api/worldbank/gdp',
+      'GET /api/worldbank/dashboard'
     ]
   });
 });
@@ -62,6 +66,11 @@ async function setupRoutes() {
     const { default: authRoutes } = await import('./routes/auth.js');
     app.use('/api/auth', authRoutes);
     console.log('✅ Authentication routes loaded');
+
+    // Import World Bank routes
+    const { default: worldBankRoutes } = await import('./routes/worldBank.js');
+    app.use('/api/worldbank', worldBankRoutes);
+    console.log('✅ World Bank routes loaded');
 
     // Import and initialize WebSocket service
     const { default: websocketService } = await import('./services/websocketService.js');

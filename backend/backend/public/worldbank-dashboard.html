@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Bank Open Data Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        select, input, button {
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #3d8bfe;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            border-left: 5px solid #4facfe;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+
+        .stat-unit {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .data-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .data-section h3 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: #4facfe;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .api-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .api-info h4 {
+            color: #004085;
+            margin-bottom: 10px;
+        }
+
+        .api-info code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #4facfe;
+            border-bottom: 2px solid #4facfe;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 World Bank Open Data Dashboard</h1>
+            <p>Real-time access to global economic, social, and environmental indicators</p>
+        </div>
+
+        <div class="dashboard">
+            <!-- API Information -->
+            <div class="api-info">
+                <h4>🚀 World Bank API Integration</h4>
+                <p>This dashboard provides clean REST API endpoints for World Bank Open Data:</p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><code>/api/worldbank/economy</code> - Economic indicators (GDP, inflation, FDI)</li>
+                    <li><code>/api/worldbank/social</code> - Social indicators (population, unemployment)</li>
+                    <li><code>/api/worldbank/health</code> - Health indicators (life expectancy, mortality)</li>
+                    <li><code>/api/worldbank/environment</code> - Environmental indicators (CO₂, energy use)</li>
+                    <li><code>/api/worldbank/dashboard?country=IN</code> - Dashboard summary</li>
+                </ul>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="countrySelect">Country</label>
+                    <select id="countrySelect">
+                        <option value="IN">India</option>
+                        <option value="US">United States</option>
+                        <option value="CN">China</option>
+                        <option value="JP">Japan</option>
+                        <option value="DE">Germany</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="FR">France</option>
+                        <option value="BR">Brazil</option>
+                        <option value="CA">Canada</option>
+                        <option value="AU">Australia</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="categorySelect">Category</label>
+                    <select id="categorySelect">
+                        <option value="economy">Economy</option>
+                        <option value="social">Social</option>
+                        <option value="health">Health</option>
+                        <option value="environment">Environment</option>
+                        <option value="education">Education</option>
+                        <option value="infrastructure">Infrastructure</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="yearSelect">Year Range</label>
+                    <select id="yearSelect">
+                        <option value="2023">2023</option>
+                        <option value="2020-2023">2020-2023</option>
+                        <option value="2015-2023">2015-2023</option>
+                        <option value="2010-2023">2010-2023</option>
+                    </select>
+                </div>
+                
+                <button onclick="loadData()" id="loadBtn">Load Data</button>
+                <button onclick="refreshData()" id="refreshBtn">Refresh API Data</button>
+            </div>
+
+            <!-- Dashboard Summary -->
+            <div class="stats-grid" id="dashboardStats">
+                <!-- Dashboard stats will be loaded here -->
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('data')">📊 Data</button>
+                <button class="tab" onclick="showTab('api')">🔧 API Explorer</button>
+                <button class="tab" onclick="showTab('stats')">📈 Statistics</button>
+            </div>
+
+            <!-- Data Tab -->
+            <div id="dataTab" class="tab-content active">
+                <div class="data-section">
+                    <h3 id="dataTitle">Economic Indicators</h3>
+                    <div id="dataContent">
+                        <div class="loading">Loading World Bank data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Explorer Tab -->
+            <div id="apiTab" class="tab-content">
+                <div class="data-section">
+                    <h3>🔧 API Explorer</h3>
+                    <div style="margin-bottom: 20px;">
+                        <label for="apiUrl" style="display: block; margin-bottom: 5px; font-weight: 600;">API Endpoint:</label>
+                        <input type="text" id="apiUrl" value="/api/worldbank/economy/gdp?country=IN" style="width: 100%; margin-bottom: 10px;">
+                        <button onclick="testApiEndpoint()">Test Endpoint</button>
+                    </div>
+                    <div id="apiResult">
+                        <p>Enter an API endpoint above and click "Test Endpoint" to see the response.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statsTab" class="tab-content">
+                <div class="data-section">
+                    <h3>📈 Database Statistics</h3>
+                    <div id="statsContent">
+                        <div class="loading">Loading statistics...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = [];
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardSummary();
+            loadData();
+            loadStats();
+        });
+
+        // Load dashboard summary
+        async function loadDashboardSummary() {
+            try {
+                const country = document.getElementById('countrySelect').value;
+                const response = await fetch(`/api/worldbank/dashboard?country=${country}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    displayDashboardSummary(result.data);
+                } else {
+                    console.error('Failed to load dashboard summary:', result.message);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard summary:', error);
+            }
+        }
+
+        // Display dashboard summary
+        function displayDashboardSummary(data) {
+            const container = document.getElementById('dashboardStats');
+            
+            const indicators = [
+                { key: 'gdp', title: 'GDP', icon: '💰' },
+                { key: 'population', title: 'Population', icon: '👥' },
+                { key: 'life-expectancy', title: 'Life Expectancy', icon: '❤️' },
+                { key: 'unemployment', title: 'Unemployment', icon: '📊' },
+                { key: 'co2-emissions', title: 'CO₂ Emissions', icon: '🌍' },
+                { key: 'inflation', title: 'Inflation', icon: '📈' }
+            ];
+
+            container.innerHTML = indicators.map(indicator => {
+                const indicatorData = data[indicator.key];
+                if (!indicatorData) return '';
+
+                return `
+                    <div class="stat-card">
+                        <h3>${indicator.icon} ${indicator.title}</h3>
+                        <div class="stat-value">${formatValue(indicatorData.value)}</div>
+                        <div class="stat-unit">${indicatorData.unit} (${indicatorData.year})</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Load data based on current selections
+        async function loadData() {
+            const country = document.getElementById('countrySelect').value;
+            const category = document.getElementById('categorySelect').value;
+            const yearRange = document.getElementById('yearSelect').value;
+            
+            const loadBtn = document.getElementById('loadBtn');
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'Loading...';
+
+            try {
+                let url = `/api/worldbank/${category}?country=${country}&limit=50`;
+                
+                if (yearRange.includes('-')) {
+                    const [startYear, endYear] = yearRange.split('-');
+                    url += `&startYear=${startYear}&endYear=${endYear}`;
+                } else {
+                    url += `&year=${yearRange}`;
+                }
+
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    currentData = result.data;
+                    displayData(result.data, category);
+                    document.getElementById('dataTitle').textContent = `${category.charAt(0).toUpperCase() + category.slice(1)} Indicators`;
+                } else {
+                    displayError('Failed to load data: ' + result.message);
+                }
+            } catch (error) {
+                displayError('Error loading data: ' + error.message);
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = 'Load Data';
+            }
+        }
+
+        // Display data in table format
+        function displayData(data, category) {
+            const container = document.getElementById('dataContent');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>No data available for the selected criteria.</p>';
+                return;
+            }
+
+            const table = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Indicator</th>
+                            <th>Year</th>
+                            <th>Value</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(item => `
+                            <tr>
+                                <td>${item.indicator.name}</td>
+                                <td>${item.year}</td>
+                                <td>${formatValue(item.value)}</td>
+                                <td>${item.unit || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = table;
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/worldbank/stats');
+                const result = await response.json();
+
+                if (result.success) {
+                    displayStats(result.stats);
+                } else {
+                    document.getElementById('statsContent').innerHTML = '<p>Failed to load statistics.</p>';
+                }
+            } catch (error) {
+                document.getElementById('statsContent').innerHTML = '<p>Error loading statistics.</p>';
+            }
+        }
+
+        // Display statistics
+        function displayStats(stats) {
+            const container = document.getElementById('statsContent');
+            
+            const html = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>📊 Total Indicators</h3>
+                        <div class="stat-value">${stats.totalIndicators.toLocaleString()}</div>
+                        <div class="stat-unit">data points</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>🌍 Countries</h3>
+                        <div class="stat-value">${stats.totalCountries}</div>
+                        <div class="stat-unit">countries</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>🔄 Last Update</h3>
+                        <div class="stat-value">${stats.freshness.latestUpdate ? new Date(stats.freshness.latestUpdate).toLocaleDateString() : 'N/A'}</div>
+                        <div class="stat-unit">latest data</div>
+                    </div>
+                </div>
+                
+                <h4>📈 Category Breakdown</h4>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Indicators</th>
+                            <th>Year Range</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stats.categoryBreakdown.map(cat => `
+                            <tr>
+                                <td>${cat._id}</td>
+                                <td>${cat.count.toLocaleString()}</td>
+                                <td>${cat.earliestYear} - ${cat.latestYear}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Test API endpoint
+        async function testApiEndpoint() {
+            const url = document.getElementById('apiUrl').value;
+            const container = document.getElementById('apiResult');
+            
+            container.innerHTML = '<div class="loading">Testing API endpoint...</div>';
+
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                container.innerHTML = `
+                    <h4>Response (${response.status}):</h4>
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.9em;">${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Refresh data
+        async function refreshData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Refreshing...';
+
+            try {
+                const response = await fetch('/api/worldbank/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        countries: ['IN', 'US', 'CN', 'JP', 'DE'],
+                        categories: ['economy', 'social', 'health']
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    displaySuccess('Data refresh completed successfully!');
+                    loadDashboardSummary();
+                    loadData();
+                    loadStats();
+                } else {
+                    displayError('Data refresh failed: ' + result.message);
+                }
+            } catch (error) {
+                displayError('Error refreshing data: ' + error.message);
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = 'Refresh API Data';
+            }
+        }
+
+        // Show tab
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Utility functions
+        function formatValue(value) {
+            if (value === null || value === undefined) return 'N/A';
+            
+            if (value >= 1e12) {
+                return (value / 1e12).toFixed(2) + 'T';
+            } else if (value >= 1e9) {
+                return (value / 1e9).toFixed(2) + 'B';
+            } else if (value >= 1e6) {
+                return (value / 1e6).toFixed(2) + 'M';
+            } else if (value >= 1e3) {
+                return (value / 1e3).toFixed(2) + 'K';
+            } else {
+                return parseFloat(value).toLocaleString();
+            }
+        }
+
+        function displayError(message) {
+            document.getElementById('dataContent').innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function displaySuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            document.querySelector('.dashboard').insertBefore(successDiv, document.querySelector('.controls'));
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 5000);
+        }
+
+        // Update dashboard when country changes
+        document.getElementById('countrySelect').addEventListener('change', loadDashboardSummary);
+    </script>
+</body>
+</html>

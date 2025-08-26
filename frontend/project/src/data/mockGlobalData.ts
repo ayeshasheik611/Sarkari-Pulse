@@ -178,7 +178,7 @@ export const mockCountries: CountryData[] = [
       { year: 2020, gdp: 14723000000000, consumption: 8123000000000, exports: 2641000000000, imports: 2061000000000 },
       { year: 2021, gdp: 17456000000000, consumption: 9456000000000, exports: 3364000000000, imports: 2687000000000 },
       { year: 2022, gdp: 17963000000000, consumption: 9845000000000, exports: 3594000000000, imports: 2736000000000 },
-      { year: 2023, gdp: 17896000000000, consumption: 10234000000000, exports: 3456000000000, exports: 2856000000000 },
+      { year: 2023, gdp: 17896000000000, consumption: 10234000000000, exports: 3456000000000, imports: 2856000000000 },
       { year: 2024, gdp: 17734000000000, consumption: 10567000000000, exports: 3512000000000, imports: 2934000000000 }
     ]
   },

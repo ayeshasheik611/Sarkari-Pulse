@@ -73,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Sarkari Pulse</h1>
-                  <p className="text-xs text-gray-500 hidden sm:block">Government & Market Insights</p>
+                  <p className="text-xs text-gray-500 hidden sm:block">Real-Time Global Insights Dashboard • Backend API • World Bank Data</p>
                 </div>
               </Link>
             </div>
@@ -207,10 +207,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              © 2024 Sarkari Pulse. Data sourced from official government portals and international organizations.
+              © 2024 Sarkari Pulse. Data sourced from World Bank Open Data, official government portals, and international organizations.
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              Auto-updates every 15-20 minutes • Last updated: {new Date().toLocaleString('en-IN')}
+              Backend API (localhost:9000) • 296 countries • 6,790+ indicators • Interactive visualizations • Export capabilities • Last updated: {new Date().toLocaleString('en-IN')}
             </p>
           </div>
         </div>
